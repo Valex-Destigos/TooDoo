@@ -5,7 +5,7 @@ export interface Todo {
     title: string,
     description: string,
     due?: string,
-    reminder?: string[],
+    reminder: string[],
     repeat: RepeatRule,
     completed: boolean,
 }
@@ -14,6 +14,6 @@ export interface NewTodo {
     title: string,
     description: string,
     due?: string,
-    reminder?: string[],
+    reminder: string[],
     repeat: RepeatRule,
 }

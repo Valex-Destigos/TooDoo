@@ -3,7 +3,7 @@ extern crate rocket;
 
 use rocket::{State, http::Method, serde::json::Json};
 use rocket_cors::{AllowedOrigins, CorsOptions};
-use std::sync::Mutex;
+use std::{sync::Mutex};
 
 mod todo;
 
@@ -17,7 +17,7 @@ fn rocket() -> _ {
 
     let cors = CorsOptions {
         allowed_origins,
-        allowed_methods: vec![Method::Get, Method::Post]
+        allowed_methods: vec![Method::Get, Method::Post, Method::Put, Method::Delete]
             .into_iter()
             .map(From::from)
             .collect(),
@@ -34,7 +34,7 @@ fn rocket() -> _ {
 
     rocket::custom(figment)
         .manage(db)
-        .mount("/api", routes![add_todo, list_all_todos])
+        .mount("/api", routes![list_all_todos, add_todo, update_todo, delete_todo])
         .attach(cors)
 }
 
@@ -63,4 +63,24 @@ fn add_todo(db: &State<TodoStore>, new_todo_json: Json<NewTodo>) -> Json<Todo> {
     todos.push(todo_to_add.clone());
 
     Json(todo_to_add)
+}
+
+#[put("/todos/<id>", data = "<updated_todo_json>")]
+fn update_todo(db: &State<TodoStore>, id: u32, updated_todo_json: Json<Todo>) {
+    let updated_todo = updated_todo_json.into_inner();
+
+    let mut todos = db.lock().unwrap();
+
+    if let Some(pos) = todos.iter().position(|todo| todo.id == id) {
+        todos[pos] = updated_todo;
+    }
+}
+
+#[delete("/todos/<id>")]
+fn delete_todo(db: &State<TodoStore>, id: u32) {
+    let mut todos = db.lock().unwrap();
+
+    if let Some(pos) = todos.iter().position(|todo| todo.id == id) {
+        todos.remove(pos);
+    }
 }

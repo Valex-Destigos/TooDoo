@@ -1,5 +1,5 @@
 use chrono::{DateTime, Local};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
@@ -17,14 +17,13 @@ impl Default for RepeatRule {
     }
 }
 
-
 #[derive(Serialize, Deserialize, Default, Debug, Clone)]
 pub struct Todo {
     pub id: u32,
     pub title: String,
     pub description: String,
     pub due: Option<DateTime<Local>>,
-    pub reminder: Option<Vec<DateTime<Local>>>,
+    pub reminder: Vec<DateTime<Local>>,
     pub repeat: RepeatRule,
     pub completed: bool,
 }
@@ -34,6 +33,6 @@ pub struct NewTodo {
     pub title: String,
     pub description: String,
     pub due: Option<DateTime<Local>>,
-    pub reminder: Option<Vec<DateTime<Local>>>,
+    pub reminder: Vec<DateTime<Local>>,
     pub repeat: RepeatRule,
 }

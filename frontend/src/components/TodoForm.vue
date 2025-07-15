@@ -135,7 +135,7 @@ function dateInputToIso(val?: string) {
           <div
             v-for="(rem, idx) in editableTodo.reminder"
             :key="idx"
-            style="display: flex; align-items: center; gap: 0.5rem"
+            style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 5pt"
           >
             <input
               type="date"
@@ -145,7 +145,7 @@ function dateInputToIso(val?: string) {
             <button type="button" @click="removeReminder(idx)">Remove</button>
           </div>
         </div>
-        <div class="utility-buttons">
+        <div class="utility-buttons" style="margin-top: -5pt">
           <button type="button" @click="addReminder" class="btn-utility">Add Reminder</button>
           <button
             type="button"

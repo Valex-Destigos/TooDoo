@@ -101,15 +101,6 @@ let pollingInterval: number | undefined
 // Fetch initial data when the component is mounted and set up polling
 onMounted(() => {
   listAllTodos()
-  pollingInterval = setInterval(listAllTodos, 1000)
-})
-
-// Clear the polling interval when the component is unmounted
-onUnmounted(() => {
-  if (pollingInterval) {
-    clearInterval(pollingInterval)
-    pollingInterval = undefined
-  }
 })
 </script>
 

@@ -8,3 +8,6 @@ rocket = { version = "0.5.1", features = ["json"] }
 rocket_cors = "0.6.0"
 chrono = { version = "0.4.41", features = ["serde"] }
 serde = "1.0.219"
+diesel = { version = "2.2.0", features = ["sqlite", "returning_clauses_for_sqlite_3_35", "chrono", "r2d2"] }
+dotenvy = "0.15"
+libsqlite3-sys = { version = "0.28.0", features = ["bundled"] }

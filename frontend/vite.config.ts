@@ -8,7 +8,7 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 export default defineConfig({
   plugins: [
     vue(),
-    //vueDevTools(),
+    vueDevTools(),
   ],
   resolve: {
     alias: {
@@ -17,10 +17,10 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0',
-    port: 5173,
+    port: 8080,
     proxy: {
       '/api': {
-        target: 'http://92.211.175.187:8000',
+        target: 'http://localhost:8000',
         changeOrigin: true,
       }
     }

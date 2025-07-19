@@ -119,11 +119,10 @@ function isoToDateInput(date: string) {
       <Transition name="expand">
         <div v-show="isExpanded" class="todo-details-wrapper">
           <div class="todo-details">
-            <p class="description">
+            <div class="description">
               <h3><strong>Description:</strong></h3>
-              <p></p>
-              {{ todo.description || 'No description provided.' }}
-            </p>
+              <p>{{ todo.description || 'No description provided.' }}</p>
+            </div>
             <div class="meta-info">
               <span v-if="todo.due" class="meta-item"
                 ><strong>Due:</strong> {{ isoToDateInput(todo.due) }}</span

@@ -51,18 +51,17 @@ function handleSave() {
     return
   }
 
-  // Create a clean payload to avoid modifying the reactive object directly during processing.
   const payload = { ...editableTodo.value }
 
   // If 'due' is present, convert it to ISO format. Otherwise, delete the key.
   if (payload.due) {
-    payload.due = new Date(payload.due).toISOString()
+    payload.due = dateTimeInputToIso(payload.due)
   } else {
     delete payload.due
   }
   payload.reminder = payload.reminder
-    .filter((r) => r) // Remove any empty strings
-    .map((r) => new Date(r).toISOString()) // Convert valid dates to ISO
+    .map((r) => dateTimeInputToIso(r))
+    .filter((r): r is string => typeof r === 'string')
 
   emit('save', payload)
 }
@@ -80,16 +79,22 @@ watch(
   },
 )
 
-function isoToDateInput(val?: string) {
+function isoToDateTimeInput(val?: string) {
+  // Converts ISO string to 'YYYY-MM-DDTHH:mm' for datetime-local input
   if (val) {
-    return val.slice(0, 10)
+    const d = new Date(val)
+    // Pad month, day, hours, minutes
+    const pad = (n: number) => n.toString().padStart(2, '0')
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
   }
+  return ''
 }
 
-function dateInputToIso(val?: string) {
+function dateTimeInputToIso(val?: string) {
   if (val) {
     return new Date(val).toISOString()
   }
+  return undefined
 }
 </script>
 
@@ -111,11 +116,11 @@ function dateInputToIso(val?: string) {
 
       <div class="form-row">
         <div class="form-group">
-          <label for="due-date">Due Date</label>
+          <label for="due-date">Due Date & Time</label>
           <input
-            type="date"
+            type="datetime-local"
             id="due-date"
-            :value="isoToDateInput(editableTodo.due)"
+            :value="isoToDateTimeInput(editableTodo.due)"
             @input="(e) => (editableTodo.due = (e.target as HTMLInputElement).value)"
           />
           <button type="button" @click="clearDue" class="btn-utility">Clear Due Date</button>
@@ -130,7 +135,7 @@ function dateInputToIso(val?: string) {
         </div>
       </div>
       <div class="form-group">
-        <label>Reminders</label>
+        <label>Reminders (Date & Time)</label>
         <div v-if="editableTodo.reminder && editableTodo.reminder.length">
           <div
             v-for="(rem, idx) in editableTodo.reminder"
@@ -138,8 +143,8 @@ function dateInputToIso(val?: string) {
             style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 5pt"
           >
             <input
-              type="date"
-              :value="isoToDateInput(rem)"
+              type="datetime-local"
+              :value="isoToDateTimeInput(rem)"
               @input="(e) => updateReminder(idx, (e.target as HTMLInputElement).value)"
             />
             <button type="button" @click="removeReminder(idx)">Remove</button>

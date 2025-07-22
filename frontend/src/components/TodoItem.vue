@@ -46,6 +46,12 @@ function cancelEdit() {
 function isoToDateInput(date: string) {
   return date.slice(0, 10)
 }
+
+function isoToDateTimeDisplay(date: string) {
+  const d = new Date(date)
+  // remove the seconds with a regex
+  return d.toLocaleString().replace(/:\d{2}\b/, '')
+}
 </script>
 
 <template>
@@ -125,7 +131,7 @@ function isoToDateInput(date: string) {
             </div>
             <div class="meta-info">
               <span v-if="todo.due" class="meta-item"
-                ><strong>Due:</strong> {{ isoToDateInput(todo.due) }}</span
+                ><strong>Due:</strong> {{ isoToDateTimeDisplay(todo.due) }}</span
               >
               <span v-if="todo.repeat != 'NEVER'" class="meta-item"
                 ><strong>Repeats:</strong> {{ todo.repeat.toLocaleLowerCase() }}</span
@@ -135,7 +141,7 @@ function isoToDateInput(date: string) {
               <span v-if="todo.reminder.length > 0" class="meta-item">
                 <strong>Reminders:</strong>
                 <div v-for="reminder in todo.reminder" :key="reminder" class="reminder-date">
-                  {{ isoToDateInput(reminder) }}
+                  {{ isoToDateTimeDisplay(reminder) }}
                 </div>
               </span>
             </div>

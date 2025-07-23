@@ -113,7 +113,6 @@ function dateTimeInputToIso(val?: string) {
         placeholder="Add a description..."
         rows="3"
       ></textarea>
-
       <div class="form-row">
         <div class="form-group">
           <label for="due-date">Due Date & Time</label>

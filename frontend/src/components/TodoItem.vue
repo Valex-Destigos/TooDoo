@@ -43,10 +43,6 @@ function cancelEdit() {
   isEditing.value = false
 }
 
-function isoToDateInput(date: string) {
-  return date.slice(0, 10)
-}
-
 function isoToDateTimeDisplay(date: string) {
   const d = new Date(date)
   // remove the seconds with a regex

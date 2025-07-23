@@ -133,8 +133,8 @@ function isoToDateTimeDisplay(date: string) {
               <span v-if="todo.due" class="meta-item"
                 ><strong>Due:</strong> {{ isoToDateTimeDisplay(todo.due) }}</span
               >
-              <span v-if="todo.repeat != 'NEVER'" class="meta-item"
-                ><strong>Repeats:</strong> {{ todo.repeat.toLocaleLowerCase() }}</span
+              <span v-if="todo.repeat != 'Never'" class="meta-item"
+                ><strong>Repeats:</strong> {{ todo.repeat }}</span
               >
             </div>
             <div class="meta-info">

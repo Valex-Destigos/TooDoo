@@ -14,7 +14,7 @@ const sortKey = ref<'recency' | 'alphabetical'>('recency')
 const getBlankTodo = (): NewTodo => ({
   title: '',
   description: '',
-  repeat: 'NEVER',
+  repeat: 'Never',
   reminder: [],
 })
 const newTodo = ref<NewTodo>(getBlankTodo())

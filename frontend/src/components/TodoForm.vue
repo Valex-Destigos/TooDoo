@@ -43,7 +43,7 @@ function clearReminders() {
   editableTodo.value.reminder = []
 }
 
-const repeatOptions: RepeatRule[] = ['NEVER', 'DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY']
+const repeatOptions: RepeatRule[] = ['Never', 'Daily', 'Weekly', 'Monthly', 'Yearly']
 
 function handleSave() {
   if (!editableTodo.value.title.trim()) {
@@ -129,7 +129,7 @@ function dateTimeInputToIso(val?: string) {
           <label for="repeat-rule">Repeat</label>
           <select id="repeat-rule" v-model="editableTodo.repeat">
             <option v-for="option in repeatOptions" :key="option" :value="option">
-              {{ option.charAt(0) + option.slice(1).toLowerCase() }}
+              {{ option }}
             </option>
           </select>
         </div>

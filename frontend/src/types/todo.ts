@@ -1,4 +1,4 @@
-export type RepeatRule = 'NEVER' | 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
+export type RepeatRule = 'Never' | 'Daily' | 'Weekly' | 'Monthly' | 'Yearly';
 
 export interface Todo {
     id: number,

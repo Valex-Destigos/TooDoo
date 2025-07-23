@@ -303,6 +303,9 @@ function isoToDateTimeDisplay(date: string) {
   font-size: 0.9rem;
   line-height: 1.6;
 }
+.description p {
+  white-space: pre-line;
+}
 .meta-info {
   display: flex;
   gap: 1.5rem;
@@ -317,7 +320,7 @@ function isoToDateTimeDisplay(date: string) {
 /* Expansion Transition */
 .expand-enter-active,
 .expand-leave-active {
-  transition: all 0.4s ease-in-out;
+  transition: all 0.6s ease-in-out;
 }
 .expand-enter-from,
 .expand-leave-to {
@@ -327,7 +330,7 @@ function isoToDateTimeDisplay(date: string) {
 }
 .expand-enter-to,
 .expand-leave-from {
-  max-height: 150px; /* Adjust if your content is taller */
+  max-height: 500px;
   opacity: 1;
 }
 </style>

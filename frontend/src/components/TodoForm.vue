@@ -99,172 +99,129 @@ function dateTimeInputToIso(val?: string) {
 </script>
 
 <template>
-  <div class="todo-form-container">
-    <div class="form-fields">
-      <input
-        type="text"
-        class="form-title"
-        v-model="editableTodo.title"
-        placeholder="What needs to be done?"
-      />
-      <textarea
-        class="form-description"
-        v-model="editableTodo.description"
-        placeholder="Add a description..."
-        rows="3"
-      ></textarea>
-      <div class="form-row">
-        <div class="form-group">
-          <label for="due-date">Due Date & Time</label>
-          <input
-            type="datetime-local"
-            id="due-date"
-            :value="isoToDateTimeInput(editableTodo.due)"
-            @input="(e) => (editableTodo.due = (e.target as HTMLInputElement).value)"
-          />
-          <button type="button" @click="clearDue" class="btn-utility">Clear Due Date</button>
-        </div>
-        <div class="form-group">
-          <label for="repeat-rule">Repeat</label>
-          <select id="repeat-rule" v-model="editableTodo.repeat">
-            <option v-for="option in repeatOptions" :key="option" :value="option">
-              {{ option }}
-            </option>
-          </select>
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Reminders (Date & Time)</label>
-        <div v-if="editableTodo.reminder && editableTodo.reminder.length">
-          <div
-            v-for="(rem, idx) in editableTodo.reminder"
-            :key="idx"
-            style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 5pt"
-          >
+  <div class="md-card">
+    <div class="md-card-content">
+      <div class="form-fields">
+        <input
+          type="text"
+          class="md-input form-title"
+          v-model="editableTodo.title"
+          placeholder="What needs to be done?"
+        />
+        <textarea
+          class="md-input md-textarea"
+          v-model="editableTodo.description"
+          placeholder="Add a description..."
+          rows="3"
+        ></textarea>
+        <div class="md-form-row">
+          <div class="md-form-group">
+            <label for="due-date" class="md-form-label">Due Date & Time</label>
             <input
               type="datetime-local"
-              :value="isoToDateTimeInput(rem)"
-              @input="(e) => updateReminder(idx, (e.target as HTMLInputElement).value)"
+              id="due-date"
+              class="md-input"
+              :value="isoToDateTimeInput(editableTodo.due)"
+              @input="(e) => (editableTodo.due = (e.target as HTMLInputElement).value)"
             />
-            <button type="button" @click="removeReminder(idx)">Remove</button>
+            <button type="button" @click="clearDue" class="md-button-text">Clear Due Date</button>
+          </div>
+          <div class="md-form-group">
+            <label for="repeat-rule" class="md-form-label">Repeat</label>
+            <select id="repeat-rule" v-model="editableTodo.repeat" class="md-input md-select">
+              <option v-for="option in repeatOptions" :key="option" :value="option">
+                {{ option }}
+              </option>
+            </select>
           </div>
         </div>
-        <div class="utility-buttons" style="margin-top: -5pt">
-          <button type="button" @click="addReminder" class="btn-utility">Add Reminder</button>
-          <button
-            type="button"
-            @click="clearReminders"
-            v-if="editableTodo.reminder && editableTodo.reminder.length"
-            class="btn-utility"
-          >
-            Clear All Reminders
-          </button>
+        <div class="md-form-group">
+          <label class="md-form-label">Reminders (Date & Time)</label>
+          <div v-if="editableTodo.reminder && editableTodo.reminder.length">
+            <div
+              v-for="(rem, idx) in editableTodo.reminder"
+              :key="idx"
+              class="reminder-item"
+            >
+              <input
+                type="datetime-local"
+                class="md-input"
+                :value="isoToDateTimeInput(rem)"
+                @input="(e) => updateReminder(idx, (e.target as HTMLInputElement).value)"
+              />
+              <button type="button" @click="removeReminder(idx)" class="md-button-secondary">Remove</button>
+            </div>
+          </div>
+          <div class="utility-buttons">
+            <button type="button" @click="addReminder" class="md-button-text">Add Reminder</button>
+            <button
+              type="button"
+              @click="clearReminders"
+              v-if="editableTodo.reminder && editableTodo.reminder.length"
+              class="md-button-text"
+            >
+              Clear All Reminders
+            </button>
+          </div>
         </div>
       </div>
     </div>
-    <div class="form-actions">
-      <button class="btn-cancel" @click="handleCancel">Cancel</button>
-      <button class="btn-save" @click="handleSave">Save</button>
+    <div class="md-card-actions">
+      <button class="md-button-secondary" @click="handleCancel">Cancel</button>
+      <button class="md-button-primary" @click="handleSave">Save</button>
     </div>
   </div>
 </template>
 
 <style scoped>
-.todo-form-container {
-  background-color: #ffffff;
-  border-radius: 12px;
-  padding: 1.25rem;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e0e0e0;
-}
-
 .form-fields {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-}
-
-input,
-textarea,
-select {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-family: 'Inter', sans-serif;
+  gap: var(--md-spacing-md);
 }
 
 .form-title {
-  font-size: 1.1rem;
+  font-size: var(--md-type-scale-subtitle1);
   font-weight: 500;
 }
 
-.form-row {
+.reminder-item {
   display: flex;
-  gap: 1rem;
+  align-items: center;
+  gap: var(--md-spacing-sm);
+  margin-bottom: var(--md-spacing-sm);
 }
 
-.form-group {
-  flex: 1;
-}
-
-.form-group label {
-  display: block;
-  font-size: 0.8rem;
-  font-weight: 500;
-  margin-bottom: 0.25rem;
-  color: #555;
-}
-
-.form-actions {
+.utility-buttons {
   display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  margin-top: 1.25rem;
-  padding-top: 1rem;
-  border-top: 1px solid #f0f0f0;
+  gap: var(--md-spacing-sm);
+  margin-top: var(--md-spacing-xs);
 }
 
-button {
-  padding: 0.6rem 1.25rem;
-  border: none;
-  border-radius: 8px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
+/* Due Date Section Spacing */
+.md-form-group #due-date {
+  margin-bottom: var(--md-spacing-sm);
 }
 
-.btn-save {
-  background-color: #364d64;
-  color: white;
-}
-.btn-save:hover {
-  background-color: rgb(47, 95, 143);
+.md-form-group .md-button-text {
+  margin-top: var(--md-spacing-xs);
 }
 
-.btn-cancel {
-  background-color: #f1f1f1;
-  color: #555;
-}
-.btn-cancel:hover {
-  background-color: #e0e0e0;
+/* Bigger buttons */
+.md-button-primary,
+.md-button-secondary {
+  padding: var(--md-spacing-sm) var(--md-spacing-lg);
 }
 
-.btn-utility {
-  margin: 8px;
-  margin-left: 0px;
-  padding: 0.4rem 0.8rem;
-  font-size: 0.8rem;
-  background-color: #f0f0f0;
-  color: #333;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.2s;
+.reminder-item .md-button-secondary {
+  padding: var(--md-spacing-sm) var(--md-spacing-md);
 }
 
-.btn-utility:hover {
-  background-color: #e0e0e0;
+/* Mobile form layout adjustments */
+@media (max-width: 640px) {
+  .md-form-row {
+    flex-direction: column !important;
+    gap: var(--md-spacing-md) !important;
+  }
 }
 </style>

@@ -2,41 +2,105 @@
 extern crate rocket;
 
 use chrono::{DateTime, Utc};
+use jsonwebtoken::{DecodingKey, Header, Validation, decode};
 use rocket::{
-    http::{ContentType, Status},
-    response::{self, Responder, Response},
-    serde::json::{json, Json},
     Request, State,
+    http::{ContentType, Status},
+    request::{FromRequest, Outcome},
+    response::{self, Responder, Response},
+    serde::json::{Json, json},
 };
 use rocket_cors::CorsOptions;
 use std::env;
 use std::io::Cursor;
 
+use diesel::BelongingToDsl;
 use diesel::r2d2::{self, ConnectionManager, Pool};
 use diesel::{prelude::*, result::Error as DieselError};
-use diesel::BelongingToDsl;
 use dotenvy::dotenv;
 
+mod api;
 mod models;
 mod schema;
-mod todo;
+mod security;
 
 // --- Model and Type Definitions ---
 type DbInsertableReminder = models::InsertableReminder;
 type DbReminder = models::Reminder;
 type DbTodo = models::Todo;
-type ApiTodo = todo::Todo;
-type NewTodo = todo::NewTodo;
-type RepeatRule = todo::RepeatRule;
+type DbInsertableTodo = models::InsertableTodo;
+type DbInsertableUser = models::InsertableUser;
+type DbUser = models::User;
 type DbPool = Pool<ConnectionManager<SqliteConnection>>;
+type ApiUser = api::User;
+type NewUser = api::NewUser;
+type ApiTodo = api::Todo;
+type NewTodo = api::NewTodo;
+type ApiSessionToken = api::SessionToken;
+type ApiClaims = api::Claims;
+type AuthenticatedUser = api::AuthenticatedUser;
+type RepeatRule = api::RepeatRule;
 
 // --- Custom Error Handling ---
 
 // Define a custom error type for our application
 #[derive(Debug)]
-enum CustomError {
+pub enum CustomError {
     DatabaseError(DieselError),
     NotFound,
+    UsernameTaken,
+    PasswordHashError(argon2::password_hash::Error),
+    JwtError(jsonwebtoken::errors::Error),
+    MissingConfig,
+    MissingAuthToken,
+}
+
+pub struct AppConfig {
+    pub jwt_secret: String,
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for AuthenticatedUser {
+    type Error = CustomError;
+
+    async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        // Step 1: Get the AppConfig state for the secret key.
+        // If it's not present, it's a server configuration error.
+        let app_config = match req.rocket().state::<AppConfig>() {
+            Some(config) => config,
+            None => {
+                // Log the server error for debugging
+                eprintln!("Missing AppConfig in Rocket state!");
+                return Outcome::Error((Status::InternalServerError, CustomError::MissingConfig));
+            }
+        };
+
+        // Step 2: Extract and validate the token from the header.
+        // We use `if let` to handle multiple failure points concisely.
+        if let Some(auth_header) = req.headers().get_one("Authorization") {
+            if let Some(token_str) = auth_header.strip_prefix("Bearer ") {
+                // Step 3: Decode the token.
+                let key = DecodingKey::from_secret(app_config.jwt_secret.as_ref());
+                let validation = Validation::default();
+
+                match decode::<ApiClaims>(token_str, &key, &validation) {
+                    Ok(token_data) => {
+                        // Success! Provide the AuthenticatedUser.
+                        return Outcome::Success(AuthenticatedUser {
+                            user_id: token_data.claims.sub,
+                        });
+                    }
+                    Err(e) => {
+                        // Token is present but invalid (expired, bad signature, etc.)
+                        return Outcome::Error((Status::Unauthorized, CustomError::from(e)));
+                    }
+                }
+            }
+        }
+
+        // If we reach here, it means the header was missing or not "Bearer".
+        Outcome::Error((Status::Unauthorized, CustomError::MissingAuthToken))
+    }
 }
 
 // Implement the Responder trait for our custom error
@@ -58,24 +122,63 @@ impl<'r> Responder<'r, 'static> for CustomError {
                     json!({"error": "An unexpected error occurred. Please try again later."}),
                 )
             }
+            CustomError::UsernameTaken => (
+                Status::BadRequest,
+                json!({"error": "The provided username is already taken."}),
+            ),
+            CustomError::PasswordHashError(e) => {
+                eprintln!("An error occured handling password hashing: {:?}", e);
+                (
+                    Status::InternalServerError,
+                    json!({"error": "An unexpected error occured handling authentication."}),
+                )
+            }
+            CustomError::JwtError(e) => {
+                eprintln!("An error occured handling JWT: {:?}", e);
+                (
+                    Status::InternalServerError,
+                    json!({"error": "An unexpected error occured handling authentication."}),
+                )
+            }
+            CustomError::MissingConfig => (
+                Status::InternalServerError,
+                json!({"error": "Server configuration error."}),
+            ),
+            CustomError::MissingAuthToken => (
+                Status::Unauthorized,
+                json!({"error": "Missing or invalid authorization token."}),
+            ),
         };
 
         // Build the response
         Response::build()
             .status(status)
             .header(ContentType::JSON)
-            .sized_body(error_json.to_string().len(), Cursor::new(error_json.to_string()))
+            .sized_body(
+                error_json.to_string().len(),
+                Cursor::new(error_json.to_string()),
+            )
             .ok()
     }
 }
 
-// Allow easy conversion from a Diesel error into our custom error using `?`
 impl From<DieselError> for CustomError {
     fn from(error: DieselError) -> Self {
         CustomError::DatabaseError(error)
     }
 }
 
+impl From<argon2::password_hash::Error> for CustomError {
+    fn from(error: argon2::password_hash::Error) -> Self {
+        CustomError::PasswordHashError(error)
+    }
+}
+
+impl From<jsonwebtoken::errors::Error> for CustomError {
+    fn from(error: jsonwebtoken::errors::Error) -> Self {
+        CustomError::JwtError(error)
+    }
+}
 
 #[launch]
 fn rocket() -> _ {
@@ -92,20 +195,36 @@ fn rocket() -> _ {
 
     let figment = rocket::Config::figment().merge(("address", "0.0.0.0"));
 
+    let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
+    let app_config = AppConfig { jwt_secret };
+
     rocket::custom(figment)
         .manage(pool)
+        .manage(app_config)
         .mount(
             "/api",
-            routes![list_all_todos, add_todo, update_todo, delete_todo],
+            routes![
+                list_all_todos,
+                add_todo,
+                update_todo,
+                delete_todo,
+                register_user,
+                login,
+            ],
         )
         .attach(cors)
 }
 
 #[get("/todos")]
-fn list_all_todos(pool: &State<DbPool>) -> Result<Json<Vec<ApiTodo>>, CustomError> {
+fn list_all_todos(
+    pool: &State<DbPool>,
+    auth_user: AuthenticatedUser,
+) -> Result<Json<Vec<ApiTodo>>, CustomError> {
     let mut conn = pool.get().expect("Failed to get DB connection from pool");
 
-    let db_todos = schema::todos::table.load::<DbTodo>(&mut conn)?;
+    let db_todos = schema::todos::table
+        .filter(schema::todos::user_id.eq(auth_user.user_id))
+        .load::<DbTodo>(&mut conn)?;
 
     let db_reminders = DbReminder::belonging_to(&db_todos)
         .load::<DbReminder>(&mut conn)?
@@ -141,42 +260,42 @@ fn list_all_todos(pool: &State<DbPool>) -> Result<Json<Vec<ApiTodo>>, CustomErro
 #[post("/todos", data = "<new_todo_json>")]
 fn add_todo(
     pool: &State<DbPool>,
+    auth_user: AuthenticatedUser,
     new_todo_json: Json<NewTodo>,
 ) -> Result<Json<ApiTodo>, CustomError> {
     let new_todo = new_todo_json.into_inner();
     let mut conn = pool.get().expect("Failed to get DB connection from pool");
 
     conn.transaction(|conn| {
-        let last_id: Option<i32> = schema::todos::table
-            .select(schema::todos::id)
-            .order(schema::todos::id.desc())
-            .first(conn)
-            .optional()?;
-        let new_id = last_id.map_or(1, |id| id + 1);
-
-        let db_todo = DbTodo {
-            id: new_id,
+        let db_todo = DbInsertableTodo {
+            user_id: auth_user.user_id,
             title: new_todo.title.clone(),
             description: new_todo.description.clone(),
             due: new_todo.due.map(|dt| dt.naive_utc()),
             repeat: new_todo.repeat.to_string(),
             completed: false,
         };
-        diesel::insert_into(schema::todos::table).values(&db_todo).execute(conn)?;
 
-        let db_reminders: Vec<DbInsertableReminder> = new_todo.reminder
+        let inserted_todo: DbTodo = diesel::insert_into(schema::todos::table)
+            .values(&db_todo)
+            .get_result(conn)?;
+
+        let db_reminders: Vec<DbInsertableReminder> = new_todo
+            .reminder
             .iter()
             .map(|rem| DbInsertableReminder {
-                todo_id: new_id,
+                todo_id: inserted_todo.id,
                 reminder: rem.naive_utc(),
             })
             .collect();
         if !db_reminders.is_empty() {
-            diesel::insert_into(schema::reminders::table).values(&db_reminders).execute(conn)?;
+            diesel::insert_into(schema::reminders::table)
+                .values(&db_reminders)
+                .execute(conn)?;
         }
 
         Ok(Json(ApiTodo {
-            id: new_id,
+            id: inserted_todo.id,
             title: new_todo.title,
             description: new_todo.description,
             due: new_todo.due,
@@ -190,6 +309,7 @@ fn add_todo(
 #[put("/todos/<id>", data = "<updated_todo_json>")]
 fn update_todo(
     pool: &State<DbPool>,
+    auth_user: AuthenticatedUser,
     id: i32,
     updated_todo_json: Json<ApiTodo>,
 ) -> Result<Json<ApiTodo>, CustomError> {
@@ -197,7 +317,9 @@ fn update_todo(
     let mut conn = pool.get().expect("Failed to get DB connection from pool");
 
     conn.transaction(|conn| {
-        let target = schema::todos::table.filter(schema::todos::id.eq(id));
+        let target = schema::todos::table
+            .filter(schema::todos::user_id.eq(auth_user.user_id))
+            .filter(schema::todos::id.eq(id));
         diesel::update(target)
             .set((
                 schema::todos::title.eq(&updated_todo.title),
@@ -208,9 +330,11 @@ fn update_todo(
             ))
             .execute(conn)?;
 
-        diesel::delete(schema::reminders::table.filter(schema::reminders::todo_id.eq(id))).execute(conn)?;
+        diesel::delete(schema::reminders::table.filter(schema::reminders::todo_id.eq(id)))
+            .execute(conn)?;
 
-        let db_reminders: Vec<DbInsertableReminder> = updated_todo.reminder
+        let db_reminders: Vec<DbInsertableReminder> = updated_todo
+            .reminder
             .iter()
             .map(|rem| DbInsertableReminder {
                 todo_id: id,
@@ -218,28 +342,100 @@ fn update_todo(
             })
             .collect();
         if !db_reminders.is_empty() {
-            diesel::insert_into(schema::reminders::table).values(&db_reminders).execute(conn)?;
+            diesel::insert_into(schema::reminders::table)
+                .values(&db_reminders)
+                .execute(conn)?;
         }
-        
+
         Ok(Json(updated_todo))
     })
 }
 
 #[delete("/todos/<id>")]
-fn delete_todo(pool: &State<DbPool>, id: i32) -> Result<Status, CustomError> {
+fn delete_todo(
+    pool: &State<DbPool>,
+    auth_user: AuthenticatedUser,
+    id: i32,
+) -> Result<Status, CustomError> {
     let mut conn = pool.get().expect("Failed to get DB connection from pool");
 
     conn.transaction(|conn| {
-        diesel::delete(schema::reminders::table.filter(schema::reminders::todo_id.eq(id))).execute(conn)?;
+        let num_deleted = diesel::delete(
+            schema::todos::table
+                .filter(schema::todos::user_id.eq(auth_user.user_id))
+                .filter(schema::todos::id.eq(id)),
+        )
+        .execute(conn)?;
 
-        let rows_deleted = diesel::delete(schema::todos::table.filter(schema::todos::id.eq(id))).execute(conn)?;
-
-        if rows_deleted == 0 {
-            // Return our specific "NotFound" error
+        if num_deleted == 0 {
             Err(CustomError::NotFound)
         } else {
-            // Return a 204 No Content on successful deletion
             Ok(Status::NoContent)
+        }
+    })
+}
+
+#[post("/users/register", data = "<user_json>")]
+fn register_user(
+    pool: &State<DbPool>,
+    user_json: Json<NewUser>,
+) -> Result<Json<ApiUser>, CustomError> {
+    let user = user_json.into_inner();
+    let mut conn = pool.get().expect("Failed to get DB connection from pool");
+
+    conn.transaction(|conn| {
+        let username_taken = schema::users::table
+            .filter(schema::users::username.eq(&user.username))
+            .select(schema::users::id)
+            .first::<i32>(conn)
+            .optional()?
+            .is_some();
+
+        if username_taken {
+            return Err(CustomError::UsernameTaken);
+        }
+        let db_user = DbInsertableUser {
+            username: user.username,
+            password: security::hash_password(&user.password)?,
+        };
+        let new_db_user = diesel::insert_into(schema::users::table)
+            .values(&db_user)
+            .get_result::<DbUser>(conn)?;
+
+        Ok(Json(ApiUser {
+            id: new_db_user.id,
+            username: new_db_user.username,
+        }))
+    })
+}
+
+#[post("/users/login", data = "<user_json>")]
+fn login(
+    pool: &State<DbPool>,
+    app_config: &State<AppConfig>,
+    user_json: Json<NewUser>,
+) -> Result<Json<ApiSessionToken>, CustomError> {
+    let user = user_json.into_inner();
+    let mut conn = pool.get().expect("Failed to get DB connection from pool");
+
+    conn.transaction(|conn| {
+        let db_user = schema::users::table
+            .filter(schema::users::username.eq(&user.username))
+            .first::<DbUser>(conn)?;
+
+        if security::verify_password(&user.password, &db_user.password)? {
+            Ok(Json(ApiSessionToken {
+                token: jsonwebtoken::encode(
+                    &Header::default(),
+                    &ApiClaims {
+                        sub: db_user.id,
+                        exp: (Utc::now() + chrono::Duration::hours(24)).timestamp() as usize,
+                    },
+                    &jsonwebtoken::EncodingKey::from_secret(app_config.jwt_secret.as_ref()),
+                )?,
+            }))
+        } else {
+            Err(CustomError::NotFound)
         }
     })
 }

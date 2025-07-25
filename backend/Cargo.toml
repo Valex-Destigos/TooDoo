@@ -10,4 +10,7 @@ chrono = { version = "0.4.41", features = ["serde"] }
 serde = "1.0.219"
 diesel = { version = "2.2.0", features = ["sqlite", "returning_clauses_for_sqlite_3_35", "chrono", "r2d2"] }
 dotenvy = "0.15"
-libsqlite3-sys = { version = "0.28.0", features = ["bundled"] }
+libsqlite3-sys = { version = "0.35.0", features = ["bundled"] }
+argon2 = "0.5"
+rand_core = { version = "0.9.3", features = ["std"] }
+jsonwebtoken = "9.3.1"

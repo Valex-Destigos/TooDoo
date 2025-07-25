@@ -59,3 +59,31 @@ pub struct NewTodo {
     pub reminder: Vec<DateTime<Utc>>,
     pub repeat: RepeatRule,
 }
+
+#[derive(Serialize, Debug, Clone)]
+pub struct User {
+    pub id: i32,
+    pub username: String,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct NewUser {
+    pub username: String,
+    pub password: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SessionToken {
+    pub token: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Claims {
+    pub sub: i32,
+    pub exp: usize,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct AuthenticatedUser {
+    pub user_id: i32,
+}

@@ -34,9 +34,9 @@ function handleUpdate(todo: Todo) {
         @update="handleUpdate"
       />
     </TransitionGroup>
-    <div v-else class="empty-state">
-      <p>All clear! No todos yet.</p>
-      <span>Add one above to get started.</span>
+    <div v-else class="md-empty-state">
+      <h3 class="md-headline-small">All clear! No todos yet.</h3>
+      <p class="md-body-medium">Add one above to get started.</p>
     </div>
   </div>
 </template>
@@ -45,36 +45,5 @@ function handleUpdate(todo: Todo) {
 .todo-list ul {
   list-style: none;
   padding: 0;
-}
-
-.empty-state {
-  text-align: center;
-  background-color: #f9f9f9;
-  border: 1px dashed #ddd;
-  border-radius: 8px;
-  padding: 3rem 2rem;
-  margin-top: 1rem;
-  color: #777;
-}
-
-.empty-state p {
-  font-weight: 500;
-  font-size: 1.1rem;
-  margin: 0 0 0.5rem 0;
-}
-
-/* Vue's TransitionGroup styles for smooth list animations */
-.list-move,
-.list-enter-active,
-.list-leave-active {
-  transition: all 0.5s cubic-bezier(0.55, 0, 0.1, 1);
-}
-.list-enter-from,
-.list-leave-to {
-  opacity: 0;
-  transform: scaleY(0.01) translate(30px, 0);
-}
-.list-leave-active {
-  position: absolute;
 }
 </style>

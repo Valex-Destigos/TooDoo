@@ -1,22 +1,83 @@
 @import './base.css';
+@import './material-components.css';
 
-#app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
   font-weight: normal;
 }
 
-a,
-.green {
-  text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
-  transition: 0.4s;
-  padding: 3px;
+body {
+  min-height: 100vh;
+  color: var(--md-on-background);
+  background: var(--md-background);
+  transition: 
+    color var(--md-motion-duration-long1) var(--md-motion-easing-standard),
+    background-color var(--md-motion-duration-long1) var(--md-motion-easing-standard);
+  line-height: 1.6;
+  font-family:
+    'Roboto',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    'Fira Sans',
+    'Droid Sans',
+    'Helvetica Neue',
+    sans-serif;
+  font-size: 15px;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-@media (hover: hover) {
-  a:hover {
-    background-color: hsla(160, 100%, 37%, 0.2);
-  }
+#app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--md-spacing-lg);
+  font-weight: normal;
+}
+
+/* Global link styles for navigation */
+a {
+  text-decoration: none;
+  color: var(--md-primary);
+  transition: color var(--md-motion-duration-short2) var(--md-motion-easing-standard);
+}
+
+a:hover {
+  color: var(--md-primary-light);
+}
+
+/* Utility classes */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* PrimeVue overrides for Material Design consistency */
+.p-button.md-button-primary {
+  background-color: var(--md-primary) !important;
+  border-color: var(--md-primary) !important;
+  color: var(--md-on-primary) !important;
+}
+
+.p-button.md-button-primary:hover {
+  background-color: var(--md-primary-light) !important;
+  border-color: var(--md-primary-light) !important;
+}
+
+.p-button.md-button-primary:focus {
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2) !important;
 }

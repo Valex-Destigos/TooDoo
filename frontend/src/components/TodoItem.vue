@@ -64,7 +64,7 @@ function isoToDateTimeDisplay(date: string) {
           :aria-checked="todo.completed"
         >
           <svg viewBox="0 0 24 24">
-            <polyline class="checkmark" points="20 6 9 17 4 12" />
+            <polyline class="checkmark" points="4 12 9 17 20 6" />
           </svg>
         </div>
 

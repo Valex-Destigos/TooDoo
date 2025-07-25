@@ -360,17 +360,29 @@ fn delete_todo(
     let mut conn = pool.get().expect("Failed to get DB connection from pool");
 
     conn.transaction(|conn| {
-        let num_deleted = diesel::delete(
-            schema::todos::table
-                .filter(schema::todos::user_id.eq(auth_user.user_id))
-                .filter(schema::todos::id.eq(id)),
-        )
-        .execute(conn)?;
+        let todo_owner = schema::todos::table
+            .filter(schema::todos::id.eq(id))
+            .select(schema::todos::user_id)
+            .first::<i32>(conn)
+            .optional()?;
 
-        if num_deleted == 0 {
-            Err(CustomError::NotFound)
-        } else {
-            Ok(Status::NoContent)
+        match todo_owner {
+            Some(owner_id) if owner_id == auth_user.user_id => {
+                diesel::delete(
+                    schema::reminders::table
+                        .filter(schema::reminders::todo_id.eq(id))
+                )
+                .execute(conn)?;
+
+                diesel::delete(
+                    schema::todos::table
+                        .filter(schema::todos::id.eq(id))
+                )
+                .execute(conn)?;
+                
+                Ok(Status::NoContent)
+            }
+            _ => Err(CustomError::NotFound),
         }
     })
 }

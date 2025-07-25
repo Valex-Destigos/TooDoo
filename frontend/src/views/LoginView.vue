@@ -4,28 +4,31 @@
       <h1 class="md-headline-large">TooDoo</h1>
       <p class="md-body-medium">your todo list companion</p>
     </header>
-    
+
     <main>
       <div class="form-container">
         <div class="auth-welcome">
           <h2 class="md-headline-medium">Welcome Back</h2>
           <p class="md-body-medium">Please sign in to access your todos</p>
         </div>
-        
+
         <AuthForm submit-label="Login" :loading="loading" @submit="handleLogin" />
-        
+
         <div v-if="errorMessage" class="error-message md-body-medium">
           {{ errorMessage }}
         </div>
-        
+
         <div class="auth-footer">
           <p class="md-body-medium">
-            Don't have an account? 
+            Don't have an account?
             <router-link to="/register" class="auth-link">Create one here</router-link>
           </p>
         </div>
       </div>
     </main>
+
+    <!-- Toast component for notifications -->
+    <Toast />
   </div>
 </template>
 
@@ -34,6 +37,8 @@ import { ref } from 'vue'
 import apiClient from '@/api/axios'
 import { useRouter } from 'vue-router'
 import { useAuthStore, type User } from '../stores/auth'
+import { useToast } from 'primevue/usetoast'
+import Toast from 'primevue/toast'
 import AuthForm from '../components/AuthForm.vue'
 
 const errorMessage = ref('')
@@ -41,6 +46,7 @@ const loading = ref(false)
 
 const router = useRouter()
 const auth = useAuthStore()
+const toast = useToast()
 
 async function handleLogin(formData: { username: string; password: string }) {
   errorMessage.value = ''
@@ -53,24 +59,55 @@ async function handleLogin(formData: { username: string; password: string }) {
     }
 
     const response = await apiClient.post('/users/login', payload)
-    
+
     // Store the token and redirect to todos
     auth.setToken(response.data.token)
-    
+
     // Store user info (we need to get it from the backend)
     // For now, we'll store just the username since that's what we have
     auth.setUser({ id: 0, username: formData.username } as User)
-    
+
+    toast.add({
+      severity: 'success',
+      summary: 'Welcome Back!',
+      detail: `Welcome back, ${formData.username}!`,
+      life: 3000,
+    })
+
     router.push('/')
   } catch (error: any) {
     if (error.response?.data?.error) {
       errorMessage.value = error.response.data.error
+      toast.add({
+        severity: 'error',
+        summary: 'Login Failed',
+        detail: error.response.data.error,
+        life: 5000,
+      })
     } else if (error.response?.data?.message) {
       errorMessage.value = error.response.data.message
+      toast.add({
+        severity: 'error',
+        summary: 'Login Failed',
+        detail: error.response.data.message,
+        life: 5000,
+      })
     } else if (error.message) {
       errorMessage.value = error.message
+      toast.add({
+        severity: 'error',
+        summary: 'Login Failed',
+        detail: error.message,
+        life: 5000,
+      })
     } else {
       errorMessage.value = 'Login failed. Please try again.'
+      toast.add({
+        severity: 'error',
+        summary: 'Login Failed',
+        detail: 'Login failed. Please try again.',
+        life: 5000,
+      })
     }
   } finally {
     loading.value = false

@@ -4,28 +4,31 @@
       <h1 class="md-headline-large">TooDoo</h1>
       <p class="md-body-medium">your todo list companion</p>
     </header>
-    
+
     <main>
       <div class="form-container">
         <div class="auth-welcome">
           <h2 class="md-headline-medium">Create Account</h2>
           <p class="md-body-medium">Join TooDoo to manage your todos</p>
         </div>
-        
+
         <AuthForm submit-label="Register" :loading="loading" @submit="handleRegister" />
-        
+
         <div v-if="errorMessage" class="error-message md-body-medium">
           {{ errorMessage }}
         </div>
-        
+
         <div class="auth-footer">
           <p class="md-body-medium">
-            Already have an account? 
+            Already have an account?
             <router-link to="/login" class="auth-link">Sign in here</router-link>
           </p>
         </div>
       </div>
     </main>
+
+    <!-- Toast component for notifications -->
+    <Toast />
   </div>
 </template>
 
@@ -33,6 +36,8 @@
 import { ref } from 'vue'
 import apiClient from '@/api/axios'
 import { useRouter } from 'vue-router'
+import { useToast } from 'primevue/usetoast'
+import Toast from 'primevue/toast'
 import AuthForm from '../components/AuthForm.vue'
 import { useAuthStore, type User } from '../stores/auth'
 
@@ -41,6 +46,7 @@ const loading = ref(false)
 
 const router = useRouter()
 const auth = useAuthStore()
+const toast = useToast()
 
 async function handleRegister(formData: { username: string; password: string }) {
   errorMessage.value = ''
@@ -56,18 +62,49 @@ async function handleRegister(formData: { username: string; password: string }) 
 
     // Store user info from registration response
     auth.setUser(response.data as User)
-    
+
+    toast.add({
+      severity: 'success',
+      summary: 'Registration Successful!',
+      detail: `Welcome ${formData.username}! Please log in to continue.`,
+      life: 4000,
+    })
+
     // On success: redirect to login to get token
     router.push('/login')
   } catch (error: any) {
     if (error.response?.data?.error) {
       errorMessage.value = error.response.data.error
+      toast.add({
+        severity: 'error',
+        summary: 'Registration Failed',
+        detail: error.response.data.error,
+        life: 5000,
+      })
     } else if (error.response?.data?.message) {
       errorMessage.value = error.response.data.message
+      toast.add({
+        severity: 'error',
+        summary: 'Registration Failed',
+        detail: error.response.data.message,
+        life: 5000,
+      })
     } else if (error.message) {
       errorMessage.value = error.message
+      toast.add({
+        severity: 'error',
+        summary: 'Registration Failed',
+        detail: error.message,
+        life: 5000,
+      })
     } else {
       errorMessage.value = 'Registration failed. Please try again.'
+      toast.add({
+        severity: 'error',
+        summary: 'Registration Failed',
+        detail: 'Registration failed. Please try again.',
+        life: 5000,
+      })
     }
   } finally {
     loading.value = false

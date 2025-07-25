@@ -46,7 +46,7 @@ function cancelEdit() {
 function isoToDateTimeDisplay(date: string) {
   const d = new Date(date)
   // remove the seconds with a regex
-  return d.toLocaleString().replace(/:\d{2}\b/, '')
+  return d.toLocaleString().replace(/:\d{2}$/, '')
 }
 </script>
 

@@ -4,7 +4,9 @@
   --md-primary: #1976d2;
   --md-primary-variant: #0d47a1;
   --md-primary-light: #42a5f5;
+  --md-primary-container: #e3f2fd;
   --md-on-primary: #ffffff;
+  --md-on-primary-container: #0d47a1;
   
   /* Material Design v2 Secondary Colors */
   --md-secondary: #03dac6;
@@ -99,6 +101,8 @@
     --md-primary: #42a5f5;
     --md-primary-variant: #1976d2;
     --md-primary-light: #90caf9;
+    --md-primary-container: #1a237e;
+    --md-on-primary-container: #e3f2fd;
     
     /* Material Design v2 Outline Colors - Dark Theme */
     --md-outline: #333333;
